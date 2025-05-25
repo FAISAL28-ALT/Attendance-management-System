@@ -1,0 +1,80 @@
+body {
+  background-color: #f3f4f6; /* tailwind: bg-gray-100 */
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 1.5rem;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.875rem; /* tailwind: text-2xl */
+  font-weight: 700;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.card {
+  background-color: white;
+  border-radius: 1rem; /* rounded-2xl */
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card h2 {
+  font-size: 1.25rem; /* tailwind: text-xl */
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.card .info {
+  background-color: #f3f4f6;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-right: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.button.blue {
+  background-color: #2563eb; /* tailwind: bg-blue-600 */
+}
+
+.button.blue:hover {
+  background-color: #1e40af; /* tailwind: hover:bg-blue-700 */
+}
+
+.button.green {
+  background-color: #16a34a; /* tailwind: bg-green-600 */
+}
+
+.button.green:hover {
+  background-color: #166534; /* tailwind: hover:bg-green-700 */
+}
+
+.button.red {
+  background-color: #dc2626; /* tailwind: bg-red-600 */
+}
+
+.button.red:hover {
+  background-color: #991b1b; /* tailwind: hover:bg-red-700 */
+}
+
+input {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.75rem;
+  width: 100%;
+  margin-bottom: 1rem;
+}

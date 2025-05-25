@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Attendance Dashboard</title>
+    <!-- Primary CDN for XLSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Fallback local XLSX script -->
+    <script>
+        if (typeof XLSX === 'undefined') {
+            document.write('<script src="/path/to/local/xlsx.full.min.js">/script>');
+        }
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            min-height: 100vh;
+        }
+        nav {
+            background-color: #2563eb;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        nav .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .manager-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .manager-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .manager-info img:hover {
+            opacity: 0.8;
+        }
+        .manager-times {
+            font-size: 0.9rem;
+            color: #e5e7eb;
+        }
+        .logout-btn, .report-btn, .add-btn, .employee-logout-btn, .permission-btn, .deny-btn, .reset-employee-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            color: white;
+            font-size: 1rem;
+        }
+        .logout-btn {
+            background-color: #ef4444;
+        }
+        .logout-btn:hover {
+            background-color: #dc2626;
+        }
+        .report-btn {
+            background-color: #16a34a;
+        }
+        .report-btn:hover {
+            background-color: #15803d;
+        }
+        .add-btn {
+            background-color: #2563eb;
+        }
+        .add-btn:hover {
+            background-color: #1e40af;
+        }
+        .employee-logout-btn {
+            background-color: #f59e0b;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .employee-logout-btn:hover {
+            background-color: #d97706;
+        }
+        .permission-btn {
+            background-color: #d97706;
+        }
+        .permission-btn:hover {
+            background-color: #b45309;
+        }
+        .deny-btn {
+            background-color: #ef4444;
+        }
+        .deny-btn:hover {
+            background-color: #dc2626;
+        }
+        .reset-employee-btn {
+            background-color: #7c3aed;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .reset-employee-btn:hover {
+            background-color: #6d28d9;
+        }
+        .permission-btn.hidden, .deny-btn.hidden, .reset-employee-btn.hidden {
+            display: none;
+        }
+        .container {
+            padding: 1.5rem;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .current-date {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        input[type="text"], select {
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 300px;
+        }
+        select {
+            max-width: 200px;
+        }
+        .placeholder-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #d1d5db;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .placeholder-img:hover {
+            opacity: 0.8;
+        }
+        .employee-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        .employee-card {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .employee-card img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .employee-card img:hover {
+            opacity: 0.8;
+        }
+        .employee-card .name {
+            font-size: 1.125rem;
+            font-weight: 500;
+        }
+        .employee-card .status, .employee-card .time {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 0.25rem 0;
+        }
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .present-btn, .absent-btn, .delete-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            color: white;
+            font-size: 0.875rem;
+        }
+        .present-btn {
+            background-color: #16a34a;
+        }
+        .present-btn:disabled {
+            background-color: #166534;
+            cursor: not-allowed;
+        }
+        .present-btn:not(:disabled):hover {
+            background-color: #15803d;
+        }
+        .absent-btn {
+            background-color: #ef4444;
+        }
+        .absent-btn:disabled {
+            background-color: #991b1b;
+            cursor: not-allowed;
+        }
+        .absent-btn:not(:disabled):hover {
+            background-color: #dc2626;
+        }
+        .delete-btn {
+            background-color: #d1d5db;
+            color: black;
+            margin-top: 0.5rem;
+        }
+        .delete-btn:hover {
+            background-color: #9ca3af;
+        }
+        .no-employees {
+            text-align: center;
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="title">Dashboard</div>
+        <div class="manager-info">
+            <img src="https://i.pravatar.cc/150?img=60" alt="Manager" onclick="triggerFileUpload('manager')">
+            <div class="manager-times" id="manager-times" style="display: none;">
+                Login: <span id="manager-login-time">--:--</span> | Logout: <span id="manager-logout-time">--:--</span>
+            </div>
+            <button class="logout-btn" onclick="logoutManager()">Logout</button>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="header">
+            <h2>Employee Attendance</h2>
+            <div>
+                <button class="report-btn" onclick="generateReport()" disabled>Generate Excel Report</button>
+                <button class="permission-btn hidden" id="permission-btn" onclick="grantManagerPermission()">Grant Manager Login Permission</button>
+                <button class="deny-btn hidden" id="deny-btn" onclick="denyManagerLogin()">Deny Manager Login</button>
+            </div>
+        </div>
+        <div class="current-date">Current Date: <span id="current-date"></span></div>
+        <div class="input-group">
+            <input type="text" id="search-input" placeholder="Search employee name..." oninput="filterEmployees()">
+            <input type="text" id="new-employee-name" placeholder="New employee name...">
+            <div class="placeholder-img" onclick="triggerFileUpload('new-employee')"></div>
+            <button class="add-btn" id="add-employee-btn" disabled onclick="addEmployee()">Add Employee</button>
+            <select id="report-month" onchange="updateReportButton()">
+                <option value="">Select Month</option>
+            </select>
+            <input type="file" id="photo-upload" accept="image/*">
+        </div>
+        <div id="employee-grid" class="employee-grid"></div>
+        <div id="no-employees" class="no-employees" style="display: none;">No employees found.</div>
+    </div>
+    <script>
+        // Check authentication
+        const authToken = JSON.parse(localStorage.getItem('authToken'));
+        if (!authToken || !authToken.loggedIn || !['uzairkh85@gmail.com', 'headmanager123@gmail.com'].includes(authToken.email)) {
+            console.log('No valid auth token, redirecting to login');
+            window.location.href = 'login.html';
+        }
+
+        const userType = authToken.userType;
+        console.log('Dashboard loaded, userType:', userType, 'email:', authToken.email);
+
+        // Verify XLSX library
+        if (typeof XLSX === 'undefined') {
+            console.error('XLSX library not loaded. Please ensure the CDN is accessible or provide a local copy.');
+            alert('Error: Excel report generation is unavailable due to missing XLSX library.');
+        }
+
+        // Load employees from localStorage or initialize with default data
+        let employees = JSON.parse(localStorage.getItem('employees')) || Array.from({ length: 50 }, (_, i) => ({
+            id: i + 1,
+            name: `Employee ${i + 1}`,
+            photo: `https://i.pravatar.cc/150?img=${i + 1}`,
+            status: "",
+            hours: 0,
+            startTime: null,
+            logoutTime: null,
+            timeString: "00:00:00",
+            attendanceRecord: {},
+            presentStartTime: null,
+            lastAttendanceDate: null,
+        }));
+
+        let manager = JSON.parse(localStorage.getItem('manager')) || {
+            name: userType === 'headManager' ? 'Head Manager' : 'Manager',
+            photo: "https://i.pravatar.cc/150?img=60",
+            loginTime: new Date().toLocaleTimeString(),
+            logoutTime: "--:--"
+        };
+
+        let newEmployeePhoto = null;
+
+        // Show permission and deny buttons for head manager only
+        if (userType === 'headManager') {
+            console.log('Showing permission and deny buttons for head manager');
+            document.getElementById('permission-btn').classList.remove('hidden');
+            document.getElementById('deny-btn').classList.remove('hidden');
+        } else {
+            console.log('Hiding permission and deny buttons for regular manager');
+            document.getElementById('permission-btn').classList.add('hidden');
+            document.getElementById('deny-btn').classList.add('hidden');
+        }
+
+        // Show manager login/logout times for regular manager
+        if (userType === 'manager') {
+            console.log('Showing login/logout times for regular manager');
+            const timesDiv = document.getElementById('manager-times');
+            timesDiv.style.display = 'block';
+            document.getElementById('manager-login-time').textContent = manager.loginTime;
+            document.getElementById('manager-logout-time').textContent = manager.logoutTime;
+        }
+
+        // Save employees and manager to localStorage
+        function saveEmployees() {
+            console.log('Saving employees to localStorage:', JSON.stringify(employees, null, 2));
+            localStorage.setItem('employees', JSON.stringify(employees));
+        }
+        function saveManager() {
+            console.log('Saving manager to localStorage:', manager);
+            localStorage.setItem('manager', JSON.stringify(manager));
+        }
+
+        function updateManagerUI() {
+            document.querySelector('.manager-info img').src = manager.photo;
+            if (userType === 'manager') {
+                document.getElementById('manager-login-time').textContent = manager.loginTime;
+                document.getElementById('manager-logout-time').textContent = manager.logoutTime;
+            }
+        }
+
+        function grantManagerPermission() {
+            const today = new Date().toLocaleDateString();
+            localStorage.setItem('specialPermission', JSON.stringify({ granted: true, date: today, denied: false }));
+            console.log(`Special permission granted for regular manager on ${today}, denied flag reset`);
+            alert('Special permission granted for regular manager to log in multiple times today.');
+        }
+
+        function denyManagerLogin() {
+            const today = new Date().toLocaleDateString();
+            const specialPermission = JSON.parse(localStorage.getItem('specialPermission')) || { granted: false, date: today, denied: false };
+            specialPermission.denied = true;
+            localStorage.setItem('specialPermission', JSON.stringify(specialPermission));
+            console.log(`Login access denied for regular manager on ${today}`);
+            alert('Login access for regular manager has been denied.');
+        }
+
+        function resetEmployeeStatus(id) {
+            const today = new Date().toLocaleDateString();
+            console.log(`Resetting status for employee ID ${id} on ${today}`);
+            employees = employees.map(emp => {
+                if (emp.id === id) {
+                    console.log(`Resetting status for ${emp.name} from ${emp.lastAttendanceDate} to ${today}`);
+                    const updatedRecord = { ...emp.attendanceRecord };
+                    delete updatedRecord[today];
+                    return {
+                        ...emp,
+                        status: "",
+                        hours: 0,
+                        startTime: null,
+                        logoutTime: null,
+                        timeString: "00:00:00",
+                        presentStartTime: null,
+                        lastAttendanceDate: today,
+                        attendanceRecord: updatedRecord,
+                    };
+                }
+                return emp;
+            });
+            saveEmployees();
+            filterEmployees();
+            alert(`Status reset for employee ID ${id}.`);
+        }
+
+        function renderEmployees(filteredEmployees) {
+            const grid = document.getElementById('employee-grid');
+            grid.innerHTML = '';
+            if (filteredEmployees.length === 0) {
+                document.getElementById('no-employees').style.display = 'block';
+                return;
+            }
+            document.getElementById('no-employees').style.display = 'none';
+            filteredEmployees.forEach(emp => {
+                const today = new Date().toLocaleDateString();
+                const isMarkedToday = emp.attendanceRecord[today] && emp.attendanceRecord[today].status;
+                const card = document.createElement('div');
+                card.className = 'employee-card';
+                card.innerHTML = `
+                    <img src="${emp.photo}" alt="${emp.name}" onclick="triggerFileUpload(${emp.id})">
+                    <div class="name">${emp.name}</div>
+                    <div class="status">Status: ${emp.status || "Not Marked"}</div>
+                    <div class="time">Time: ${emp.status === "Present" && !emp.logoutTime ? emp.timeString : emp.hours.toFixed(2) + " hours"}</div>
+                    <div class="button-group">
+                        <button class="present-btn" ${isMarkedToday ? "disabled" : ""} onclick="markAttendance(${emp.id}, 'Present')">
+                            ${isMarkedToday && emp.attendanceRecord[today].status === "Present" ? "Marked Present" : "Mark Present"}
+                        </button>
+                        <button class="absent-btn" ${isMarkedToday ? "disabled" : ""} onclick="markAttendance(${emp.id}, 'Absent')">
+                            ${isMarkedToday && emp.attendanceRecord[today].status === "Absent" ? "Marked Absent" : "Mark Absent"}
+                        </button>
+                    </div>
+                    ${emp.status === "Present" && !emp.logoutTime ? `<button class="employee-logout-btn" onclick="logoutEmployee(${emp.id})">Logout</button>` : ""}
+                    <button class="delete-btn" onclick="deleteEmployee(${emp.id})">Delete</button>
+                    ${userType === 'headManager' ? `<button class="reset-employee-btn" onclick="resetEmployeeStatus(${emp.id})">Reset Status</button>` : ""}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterEmployees() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const filteredEmployees = employees.filter(emp => emp.name.toLowerCase().includes(searchTerm));
+            renderEmployees(filteredEmployees);
+        }
+
+        function markAttendance(id, status) {
+            const now = new Date();
+            const today = new Date().toLocaleDateString();
+            const hours = now.getHours();
+            const isLate = status === "Present" && hours >= 9;
+            console.log(`Marking attendance for ID ${id}: status=${status}, late=${isLate}, time=${now.toLocaleTimeString()}, date=${today}`);
+            employees = employees.map(emp => {
+                if (emp.id === id) {
+                    const updatedRecord = {
+                        ...emp.attendanceRecord,
+                        [today]: {
+                            status,
+                            hours: 0,
+                            markedPresentTime: status === "Present" ? now.toLocaleTimeString() : null,
+                            late: isLate,
+                        },
+                    };
+                    console.log(`Updated attendanceRecord for ${emp.name}:`, updatedRecord);
+                    if (status === "Present") {
+                        return {
+                            ...emp,
+                            status,
+                            startTime: now,
+                            presentStartTime: now.toLocaleTimeString(),
+                            hours: 0,
+                            timeString: "00:00:00",
+                            logoutTime: null,
+                            attendanceRecord: updatedRecord,
+                            lastAttendanceDate: today,
+                        };
+                    } else {
+                        return {
+                            ...emp,
+                            status,
+                            hours: 0,
+                            startTime: null,
+                            logoutTime: null,
+                            timeString: "00:00:00",
+                            presentStartTime: null,
+                            attendanceRecord: updatedRecord,
+                            lastAttendanceDate: today,
+                        };
+                    }
+                }
+                return emp;
+            });
+            saveEmployees();
+            populateMonthDropdown();
+            filterEmployees();
+        }
+
+        function logoutEmployee(id) {
+            const now = new Date();
+            employees = employees.map(emp => {
+                if (emp.id === id && emp.status === "Present" && !emp.logoutTime) {
+                    const diff = now - new Date(emp.startTime);
+                    const hours = diff / 3600000;
+                    const today = new Date().toLocaleDateString();
+                    const updatedRecord = {
+                        ...emp.attendanceRecord,
+                        [today]: {
+                            ...emp.attendanceRecord[today],
+                            hours: hours,
+                        },
+                    };
+                    console.log(`Logging out employee ID ${id}: hours=${hours.toFixed(2)}, date=${today}, updatedRecord=`, updatedRecord);
+                    return {
+                        ...emp,
+                        logoutTime: now.toLocaleTimeString(),
+                        hours: hours,
+                        timeString: `${Math.floor(hours).toString().padStart(2, '0')}:${Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0')}:${Math.floor((diff % 60000) / 1000).toString().padStart(2, '0')}`,
+                        attendanceRecord: updatedRecord,
+                    };
+                }
+                return emp;
+            });
+            saveEmployees();
+            populateMonthDropdown();
+            filterEmployees();
+        }
+
+        function logoutManager() {
+            manager.logoutTime = new Date().toLocaleTimeString();
+            localStorage.setItem('managerLoggedOut', 'true');
+            localStorage.removeItem('authToken');
+            console.log('Manager logged out, auth token cleared, manager:', manager);
+            saveManager();
+            window.location.href = 'login.html';
+        }
+
+        function populateMonthDropdown() {
+            const select = document.getElementById('report-month');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">Select Month</option>';
+            const allDates = employees.flatMap(emp => Object.keys(emp.attendanceRecord));
+            const uniqueMonths = [...new Set(
+                allDates.map(date => {
+                    try {
+                        const d = new Date(date);
+                        if (isNaN(d.getTime())) throw new Error(`Invalid date: ${date}`);
+                        return `${d.getFullYear()}-${d.getMonth()}`;
+                    } catch (e) {
+                        console.error(`Error parsing date in attendanceRecord: ${date}`, e);
+                        return null;
+                    }
+                }).filter(month => month !== null)
+            )].sort((a, b) => {
+                const [yearA, monthA] = a.split('-').map(Number);
+                const [yearB, monthB] = b.split('-').map(Number);
+                return yearA - yearB || monthA - monthB;
+            });
+            const today = new Date();
+            const currentMonth = `${today.getFullYear()}-${today.getMonth()}`;
+            if (!uniqueMonths.includes(currentMonth)) {
+                uniqueMonths.push(currentMonth);
+            }
+            console.log('Populating month dropdown with months:', uniqueMonths);
+            uniqueMonths.forEach(month => {
+                const [year, monthIdx] = month.split('-').map(Number);
+                const monthName = new Date(year, monthIdx).toLocaleString('default', { month: 'long', year: 'numeric' });
+                const option = document.createElement('option');
+                option.value = `${year}-${monthIdx}`;
+                option.textContent = monthName;
+                select.appendChild(option);
+            });
+            if (currentValue && uniqueMonths.includes(currentValue)) {
+                select.value = currentValue;
+            }
+            updateReportButton();
+        }
+
+        function updateReportButton() {
+            const select = document.getElementById('report-month');
+            const reportBtn = document.querySelector('.report-btn');
+            const isEnabled = !!select.value;
+            reportBtn.disabled = !isEnabled;
+            console.log('Report button state:', isEnabled ? 'Enabled' : 'Disabled', 'Selected month:', select.value);
+        }
+
+        function generateReport() {
+            try {
+                console.log('Starting report generation');
+                const select = document.getElementById('report-month');
+                if (!select.value) {
+                    console.error('No month selected for report');
+                    alert('Please select a month to generate the report.');
+                    return;
+                }
+                const [year, month] = select.value.split('-').map(Number);
+                const reportMonth = new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' });
+                console.log('Generating report for month:', reportMonth);
+                const today = new Date();
+                const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+                const cutoffDate = isCurrentMonth ? new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1) : new Date(year, month + 1, 0);
+                const allDates = [];
+                const startDate = new Date(year, month, 1);
+                const endDate = cutoffDate;
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    allDates.push(new Date(d).toLocaleDateString());
+                }
+                console.log('Report dates:', allDates);
+                const recordedDates = [...new Set(
+                    employees.flatMap(emp => Object.keys(emp.attendanceRecord))
+                        .filter(date => {
+                            try {
+                                const d = new Date(date);
+                                return d.getFullYear() === year && d.getMonth() === month && d <= cutoffDate;
+                            } catch (e) {
+                                console.error(`Error parsing recorded date: ${date}`, e);
+                                return false;
+                            }
+                        })
+                )];
+                console.log('Recorded dates in attendanceRecord:', recordedDates);
+                const sheetData = employees.map(emp => {
+                    let fullDays = 0;
+                    let halfDays = 0;
+                    let totalScore = 0;
+                    const row = {
+                        Name: emp.name,
+                        "Total Full Days": 0,
+                        "Total Half Days": 0,
+                        "Total Score": "0.00",
+                    };
+                    allDates.forEach(date => {
+                        const record = emp.attendanceRecord[date] || { status: "Not Marked", hours: 0 };
+                        let points = 0;
+                        if (record.status === "Present") {
+                            if (record.hours >= 8) {
+                                points = 1;
+                                fullDays++;
+                            } else if (record.hours >= 4 && record.hours < 8) {
+                                points = 0.5;
+                                halfDays++;
+                            }
+                        }
+                        totalScore += points;
+                        row[date] = points.toFixed(1);
+                    });
+                    row["Total Full Days"] = fullDays;
+                    row["Total Half Days"] = halfDays;
+                    row["Total Score"] = totalScore.toFixed(2);
+                    console.log(`Employee ${emp.name} report row:`, row);
+                    return row;
+                });
+                console.log('Final sheetData:', sheetData);
+                if (!XLSX) {
+                    throw new Error('XLSX library is not available');
+                }
+                const worksheet = XLSX.utils.json_to_sheet(sheetData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, `Attendance Report - ${reportMonth}`);
+                XLSX.writeFile(workbook, `Employee_Attendance_Report_${reportMonth}.xlsx`);
+                console.log('Report generated successfully');
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Failed to generate report. Check console for details.');
+            }
+        }
+
+        function triggerFileUpload(id) {
+            const fileInput = document.getElementById('photo-upload');
+            fileInput.setAttribute('data-id', id);
+            fileInput.click();
+        }
+
+        function handleFileUpload(event) {
+            const fileInput = event.target;
+            const id = fileInput.getAttribute('data-id');
+            if (fileInput.files && fileInput.files[0]) {
+                if (fileInput.files[0].size > 1024 * 1024) {
+                    alert("Image size must be less than 1MB.");
+                    fileInput.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    if (id === 'new-employee') {
+                        newEmployeePhoto = e.target.result;
+                        document.querySelector('.placeholder-img').style.backgroundImage = `url(${newEmployeePhoto})`;
+                        document.querySelector('.placeholder-img').style.backgroundSize = 'cover';
+                    } else if (id === 'manager') {
+                        manager.photo = e.target.result;
+                        saveManager();
+                        updateManagerUI();
+                    } else {
+                        employees = employees.map(emp => {
+                            if (emp.id === parseInt(id)) {
+                                return { ...emp, photo: e.target.result };
+                            }
+                            return emp;
+                        });
+                        saveEmployees();
+                        filterEmployees();
+                    }
+                    fileInput.value = '';
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        }
+
+        function addEmployee() {
+            const newEmployeeName = document.getElementById('new-employee-name').value.trim();
+            if (!newEmployeeName) return;
+            const newId = employees.length ? employees[employees.length - 1].id + 1 : 1;
+            const newEmp = {
+                id: newId,
+                name: newEmployeeName,
+                photo: newEmployeePhoto || `https://i.pravatar.cc/150?img=${newId}`,
+                status: "",
+                hours: 0,
+                startTime: null,
+                logoutTime: null,
+                timeString: "00:00:00",
+                attendanceRecord: {},
+                presentStartTime: null,
+                lastAttendanceDate: null,
+            };
+            employees.push(newEmp);
+            console.log(`Added employee:`, newEmp);
+            saveEmployees();
+            document.getElementById('new-employee-name').value = '';
+            document.querySelector('.placeholder-img').style.backgroundImage = '';
+            document.querySelector('.placeholder-img').style.backgroundSize = '';
+            newEmployeePhoto = null;
+            document.getElementById('add-employee-btn').disabled = true;
+            populateMonthDropdown();
+            filterEmployees();
+        }
+
+        function deleteEmployee(id) {
+            if (confirm(`Are you sure you want to delete ${employees.find(emp => emp.id === id).name}?`)) {
+                employees = employees.filter(emp => emp.id !== id);
+                console.log(`Deleted employee ID ${id}`);
+                saveEmployees();
+                populateMonthDropdown();
+                filterEmployees();
+            }
+        }
+
+        function updateTimers() {
+            employees = employees.map(emp => {
+                if (emp.status === "Present" && emp.startTime && !emp.logoutTime) {
+                    const now = new Date();
+                    const diff = now - new Date(emp.startTime);
+                    const hours = Math.floor(diff / 3600000);
+                    const minutes = Math.floor((diff % 3600000) / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    return { ...emp, hours: diff / 3600000, timeString };
+                }
+                return emp;
+            });
+            saveEmployees();
+            filterEmployees();
+        }
+
+        // Initialize
+        updateManagerUI();
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+        populateMonthDropdown();
+        renderEmployees(employees);
+        setInterval(updateTimers, 1000);
+
+        // Enable/disable Add Employee button based on name input
+        document.getElementById('new-employee-name').addEventListener('input', function () {
+            document.getElementById('add-employee-btn').disabled = !this.value.trim();
+        });
+
+        // Handle file upload
+        document.getElementById('photo-upload').addEventListener('change', handleFileUpload);
+    </script>
+</body>
+</html>

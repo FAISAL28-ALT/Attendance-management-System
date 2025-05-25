@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login Page</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .fade-in {
+      opacity: 0;
+      transform: translateY(-50px);
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .error-message {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen flex items-center justify-center p-6">
+  <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c"
+       alt="Company Building"
+       class="absolute inset-0 w-full h-full object-cover opacity-10 z-0" />
+  <div class="absolute inset-0 bg-gradient-to-tr from-blue-100 via-white to-blue-100 opacity-90 z-0"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md z-10 fade-in">
+    <div class="flex justify-center mb-6">
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+        alt="Company Logo"
+        class="h-20 w-20 rounded-full shadow object-cover" />
+    </div>
+    <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">Welcome Back</h1>
+    <div class="space-y-4">
+      <input
+        type="text"
+        id="email"
+        placeholder="User ID"
+        class="border border-gray-300 w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      <input
+        type="password"
+        id="password"
+        placeholder="Password"
+        class="border border-gray-300 w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      <button
+        onclick="handleLogin()"
+        class="bg-blue-600 text-white w-full px-4 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition duration-300"
+      >
+        Log In
+      </button>
+      <div id="error-message" class="error-message"></div>
+    </div>
+  </div>
+  <script>
+    function handleLogin() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const errorMessage = document.getElementById('error-message');
+      errorMessage.style.display = 'none';
+      errorMessage.textContent = '';
+
+      const today = new Date().toLocaleDateString();
+      const specialPermission = JSON.parse(localStorage.getItem('specialPermission')) || { granted: false, date: null, denied: false };
+
+      // Clear expired special permission
+      if (specialPermission.date !== today) {
+        console.log('Clearing expired special permission:', specialPermission);
+        localStorage.setItem('specialPermission', JSON.stringify({ granted: false, date: null, denied: false }));
+      }
+
+      // Validate credentials
+      const validCredentials = [
+        { email: 'uzairkh85@gmail.com', password: '12345', userType: 'manager' },
+        { email: 'headmanager123@gmail.com', password: 'head123', userType: 'headManager' },
+      ];
+      const user = validCredentials.find(cred => cred.email === email && cred.password === password);
+
+      if (!user) {
+        console.log('Invalid credentials:', { email, password });
+        errorMessage.textContent = 'Invalid User ID or Password. Please try again.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      // Initialize or update manager object
+      let manager = JSON.parse(localStorage.getItem('manager')) || {
+        name: user.userType === 'headManager' ? 'Head Manager' : 'Manager',
+        photo: "https://i.pravatar.cc/150?img=60",
+        loginTime: "--:--",
+        logoutTime: "--:--"
+      };
+      manager.loginTime = new Date().toLocaleTimeString();
+      manager.logoutTime = "--:--";
+      localStorage.setItem('manager', JSON.stringify(manager));
+
+      // Handle regular manager login
+      if (user.userType === 'manager') {
+        console.log('Regular manager login attempt');
+        const hasLoggedOut = localStorage.getItem('managerLoggedOut') === 'true';
+        const permission = JSON.parse(localStorage.getItem('specialPermission')) || { granted: false, date: null, denied: false };
+
+        // Check if login is denied
+        if (permission.denied) {
+          console.log('Login denied by head manager');
+          errorMessage.textContent = 'Login access has been denied by the head manager.';
+          errorMessage.style.display = 'block';
+          return;
+        }
+
+        // Check if already logged out today and no special permission
+        const lastManagerLoginDate = localStorage.getItem('lastManagerLoginDate');
+        if (lastManagerLoginDate === today && hasLoggedOut && !(permission.granted && permission.date === today)) {
+          console.log('Regular manager already logged out today, no special permission');
+          errorMessage.textContent = 'You have already logged out today. Please request special permission from the head manager to log in again.';
+          errorMessage.style.display = 'block';
+          return;
+        }
+      }
+
+      // Successful login
+      localStorage.setItem('lastManagerLoginDate', today);
+      localStorage.setItem('managerLoggedOut', 'false');
+      const authToken = { loggedIn: true, email: email, userType: user.userType };
+      localStorage.setItem('authToken', JSON.stringify(authToken));
+      console.log('Login successful, user:', user, 'authToken:', authToken, 'manager:', manager);
+      window.location.href = 'dasbord.html';
+    }
+  </script>
+</body>
+</html>

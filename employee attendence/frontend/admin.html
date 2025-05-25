@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+  <!-- BlazeFace -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.js"></script>
+  <style>
+    .fade-in {
+      opacity: 0;
+      transform: translateY(-50px);
+      animation: fadeIn 0.6s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .error-message {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+      text-align: center;
+    }
+    #face-capture-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 20;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      text-align: center;
+      position: relative;
+      max-width: 500px;
+      width: 90%;
+    }
+    #webcam {
+      border: 2px solid #d1d5db;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    #face-canvas {
+      display: none;
+    }
+    .close-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="relative min-h-screen flex items-center justify-center p-6">
+  <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c"
+       alt="Company Building"
+       class="absolute inset-0 w-full h-full object-cover opacity-10 z-0" />
+  <div class="absolute inset-0 bg-gradient-to-tr from-blue-100 via-white to-blue-100 opacity-90 z-0"></div>
+
+  <!-- Admin Login -->
+  <div id="admin-login" class="relative bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md z-10 fade-in">
+    <div class="flex justify-center mb-6">
+      <img
+        src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+        alt="Company Logo"
+        class="h-20 w-20 rounded-full shadow object-cover" />
+    </div>
+    <h1 class="text-3xl font-extrabold text-center text-gray-800 mb-6">Admin Login</h1>
+    <div class="space-y-4">
+      <input
+        type="text"
+        id="admin-username"
+        placeholder="Admin Username"
+        class="border border-gray-300 w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      <input
+        type="password"
+        id="admin-password"
+        placeholder="Admin Password"
+        class="border border-gray-300 w-full px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      <button
+        onclick="handleAdminLogin()"
+        class="bg-blue-600 text-white w-full px-4 py-3 rounded-xl shadow-lg hover:bg-blue-700 transition duration-300"
+      >
+        Log In
+      </button>
+      <div id="admin-error" class="error-message"></div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="admin-dashboard" class="relative bg-white rounded-2xl shadow-2xl p-10 w-full max-w-4xl z-10 fade-in" style="display: none;">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-extrabold text-gray-800">Admin Dashboard</h1>
+      <button
+        onclick="logoutAdmin()"
+        class="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition duration-300"
+      >
+        Logout
+      </button>
+    </div>
+    <div class="space-y-6">
+      <!-- Regular Manager Section -->
+      <div class="border p-4 rounded-xl">
+        <h2 class="text-xl font-bold mb-4">Regular Manager</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              id="regular-username"
+              class="border border-gray-300 w-full px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              id="regular-password"
+              class="border border-gray-300 w-full px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div class="flex space-x-4">
+            <button
+              onclick="updateRegularManager()"
+              class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition duration-300"
+            >
+              Update Credentials
+            </button>
+            <button
+              onclick="captureFace('faisalkhancs28@gmail.com')"
+              class="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition duration-300"
+            >
+              Add Face
+            </button>
+            <button
+              onclick="deleteFace('faisalkhancs28@gmail.com')"
+              class="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition duration-300"
+            >
+              Delete Face
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Head Manager Section -->
+      <div class="border p-4 rounded-xl">
+        <h2 class="text-xl font-bold mb-4">Head Manager</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              id="head-username"
+              class="border border-gray-300 w-full px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              id="head-password"
+              class="border border-gray-300 w-full px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div class="flex space-x-4">
+            <button
+              onclick="updateHeadManager()"
+              class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition duration-300"
+            >
+              Update Credentials
+            </button>
+            <button
+              onclick="captureFace('headmanager123@gmail.com')"
+              class="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700 transition duration-300"
+            >
+              Add Face
+            </button>
+            <button
+              onclick="deleteFace('headmanager123@gmail.com')"
+              class="bg-red-600 text-white px-4 py-2 rounded-xl hover:bg-red-700 transition duration-300"
+            >
+              Delete Face
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Face Capture Modal -->
+  <div id="face-capture-modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeFaceCaptureModal()">×</button>
+      <h2 class="text-xl font-bold mb-4">Capture Face</h2>
+      <p class="mb-4">Please position your face in front of the camera. Capture 5 images.</p>
+      <video id="webcam" autoplay muted playsinline width="320" height="240"></video>
+      <canvas id="face-canvas" style="display: none;"></canvas>
+      <p id="capture-count" class="mb-4">Images captured: 0/5</p>
+      <button
+        onclick="captureFaceImage()"
+        class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition duration-300 mt-4"
+      >
+        Capture Image
+      </button>
+      <button
+        id="train-model-btn"
+        onclick="trainModel()"
+        class="bg-purple-600 text-white px-4 py-2 rounded-xl hover:bg-purple-700 transition duration-300 mt-4"
+        style="display: none;"
+      >
+        Train Model
+      </button>
+      <div id="face-error" class="error-message"></div>
+    </div>
+  </div>
+
+  <script>
+    let blazeFaceModel = null;
+    let faceModel = null;
+    let capturedImages = [];
+    let capturedLabels = [];
+    const IMAGE_SIZE = 64;
+    const NUM_CLASSES = 2; // Regular manager (0), Head manager (1)
+    const IMAGES_PER_PERSON = 5;
+
+    // Check if running in a secure context
+    function isSecureContext() {
+      const isSecure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      console.log('Secure context check:', isSecure);
+      return isSecure;
+    }
+
+    // Check if getUserMedia is supported
+    function isGetUserMediaSupported() {
+      const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+      console.log('getUserMedia supported:', supported);
+      return supported;
+    }
+
+    // Load BlazeFace model
+    async function loadModels() {
+      try {
+        console.log('Loading BlazeFace model...');
+        blazeFaceModel = await blazeface.load();
+        console.log('BlazeFace model loaded successfully');
+      } catch (error) {
+        console.error('Error loading BlazeFace model:', error);
+        alert('Failed to load face detection model. Please try again later.');
+      }
+    }
+
+    // Create the face recognition model
+    function createFaceModel() {
+      const model = tf.sequential();
+      model.add(tf.layers.conv2d({
+        inputShape: [IMAGE_SIZE, IMAGE_SIZE, 3],
+        filters: 16,
+        kernelSize: 3,
+        activation: 'relu',
+        padding: 'same'
+      }));
+      model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
+      model.add(tf.layers.conv2d({
+        filters: 32,
+        kernelSize: 3,
+        activation: 'relu',
+        padding: 'same'
+      }));
+      model.add(tf.layers.maxPooling2d({ poolSize: 2 }));
+      model.add(tf.layers.flatten());
+      model.add(tf.layers.dense({ units: 128, activation: 'relu' })); // Embedding layer
+      model.add(tf.layers.dense({ units: NUM_CLASSES, activation: 'softmax' })); // Classification for training
+      model.compile({
+        optimizer: tf.train.adam(),
+        loss: 'sparseCategoricalCrossentropy',
+        metrics: ['accuracy']
+      });
+      console.log('Face recognition model created');
+      return model;
+    }
+
+    // Start webcam
+    async function startWebcam() {
+      const video = document.getElementById('webcam');
+      try {
+        if (!isSecureContext()) {
+          throw new Error('Webcam access requires a secure context (HTTPS or localhost).');
+        }
+        if (!isGetUserMediaSupported()) {
+          throw new Error('This browser does not support webcam access (getUserMedia).');
+        }
+        console.log('Attempting to start webcam...');
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        await new Promise((resolve, reject) => {
+          video.onloadedmetadata = () => {
+            console.log('Webcam video metadata loaded');
+            resolve();
+          };
+          video.onerror = () => {
+            reject(new Error('Failed to load webcam video stream.'));
+          };
+        });
+        console.log('Webcam started successfully');
+      } catch (error) {
+        let errorMessage = 'Unable to access webcam. ';
+        if (error.name === 'NotAllowedError') {
+          errorMessage += 'Camera access was denied. Please allow camera access in your browser settings.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage += 'No camera found. Please ensure a camera is connected and available.';
+        } else if (error.name === 'NotReadableError') {
+          errorMessage += 'The camera is already in use by another application. Please close other apps using the camera.';
+        } else {
+          errorMessage += error.message || 'An unknown error occurred.';
+        }
+        console.error('Error in startWebcam:', error);
+        document.getElementById('face-error').textContent = errorMessage;
+        document.getElementById('face-error').style.display = 'block';
+        throw error;
+      }
+    }
+
+    // Stop webcam
+    function stopWebcam() {
+      const video = document.getElementById('webcam');
+      const stream = video.srcObject;
+      if (stream) {
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+        console.log('Webcam stopped');
+      }
+    }
+
+    // Preprocess image with BlazeFace detection
+    async function preprocessImage(video, detection) {
+      const canvas = document.getElementById('face-canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = IMAGE_SIZE;
+      canvas.height = IMAGE_SIZE;
+
+      // BlazeFace returns top-left and bottom-right corners
+      const start = detection.topLeft;
+      const end = detection.bottomRight;
+      const width = end[0] - start[0];
+      const height = end[1] - start[1];
+      const x = start[0];
+      const y = start[1];
+
+      // Add some padding to the bounding box to ensure the whole face is captured
+      const padding = 0.2;
+      const paddedWidth = width * (1 + padding);
+      const paddedHeight = height * (1 + padding);
+      const paddedX = Math.max(0, x - (width * padding / 2));
+      const paddedY = Math.max(0, y - (height * padding / 2));
+
+      ctx.drawImage(video, paddedX, paddedY, paddedWidth, paddedHeight, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
+
+      let tensor = tf.browser.fromPixels(canvas)
+        .toFloat()
+        .div(255.0) // Normalize to [0, 1]
+        .expandDims(0); // Add batch dimension
+      return tensor;
+    }
+
+    // Show face capture modal
+    let currentEmail = null;
+    let currentLabel = null;
+    async function captureFace(email) {
+      console.log('Capture Face button clicked for email:', email);
+      currentEmail = email;
+      currentLabel = email === 'faisalkhancs28@gmail.com' ? 0 : 1; // 0 for regular, 1 for head
+      capturedImages = [];
+      capturedLabels = [];
+      document.getElementById('capture-count').textContent = 'Images captured: 0/5';
+      document.getElementById('train-model-btn').style.display = 'none';
+      const modal = document.getElementById('face-capture-modal');
+      modal.style.display = 'flex';
+      document.getElementById('face-error').style.display = 'none';
+      console.log('Face capture modal displayed');
+      try {
+        await startWebcam();
+      } catch (error) {
+        console.error('Failed to start webcam in captureFace:', error);
+      }
+    }
+
+    // Close face capture modal
+    function closeFaceCaptureModal() {
+      console.log('Closing face capture modal');
+      document.getElementById('face-capture-modal').style.display = 'none';
+      stopWebcam();
+      currentEmail = null;
+      currentLabel = null;
+      capturedImages = [];
+      capturedLabels = [];
+    }
+
+    // Capture face image
+    async function captureFaceImage() {
+      if (!blazeFaceModel) {
+        document.getElementById('face-error').textContent = 'Face detection model is not loaded. Please refresh the page and try again.';
+        document.getElementById('face-error').style.display = 'block';
+        return;
+      }
+
+      const video = document.getElementById('webcam');
+      const faceError = document.getElementById('face-error');
+      faceError.style.display = 'none';
+
+      if (!video.srcObject) {
+        faceError.textContent = 'Webcam is not active. Please try again after ensuring camera access.';
+        faceError.style.display = 'block';
+        return;
+      }
+
+      try {
+        console.log('Detecting face from webcam for:', currentEmail);
+        const predictions = await blazeFaceModel.estimateFaces(video, false);
+        if (!predictions || predictions.length === 0) {
+          console.log('No face detected in the video feed');
+          faceError.textContent = 'No face detected. Please ensure your face is visible and centered in the camera.';
+          faceError.style.display = 'block';
+          return;
+        }
+
+        // Use the first detected face
+        const detection = predictions[0];
+        const tensor = await preprocessImage(video, detection);
+        capturedImages.push(tensor);
+        capturedLabels.push(currentLabel);
+        const count = capturedImages.length;
+        document.getElementById('capture-count').textContent = `Images captured: ${count}/5`;
+        console.log(`Captured image ${count} for email: ${currentEmail}`);
+
+        if (count === IMAGES_PER_PERSON) {
+          document.getElementById('train-model-btn').style.display = 'inline-block';
+          alert('All images captured. Click "Train Model" to proceed.');
+        }
+      } catch (error) {
+        console.error('Error capturing face image:', error);
+        faceError.textContent = 'Error capturing face image. Please try again.';
+        faceError.style.display = 'block';
+      }
+    }
+
+    // Train the model
+    async function trainModel() {
+      if (capturedImages.length < IMAGES_PER_PERSON) {
+        document.getElementById('face-error').textContent = 'Please capture all 5 images before training.';
+        document.getElementById('face-error').style.display = 'block';
+        return;
+      }
+
+      try {
+        console.log('Starting model training...');
+        faceModel = createFaceModel();
+
+        // Stack the images and labels
+        const xs = tf.concat(capturedImages, 0);
+        const ys = tf.tensor1d(capturedLabels, 'int32');
+
+        // Train the model
+        await faceModel.fit(xs, ys, {
+          epochs: 10,
+          batchSize: 4,
+          shuffle: true,
+          callbacks: {
+            onEpochEnd: (epoch, logs) => {
+              console.log(`Epoch ${epoch + 1}: Loss = ${logs.loss}, Accuracy = ${logs.acc}`);
+            }
+          }
+        });
+
+        // Extract embeddings for the captured images
+        const embeddingModel = tf.model({
+          inputs: faceModel.inputs,
+          outputs: faceModel.layers[faceModel.layers.length - 2].output // Get the embedding layer
+        });
+        const embeddings = embeddingModel.predict(xs);
+        const embeddingsArray = await embeddings.array();
+
+        // Save embeddings
+        const storedEmbeddings = JSON.parse(localStorage.getItem('customFaceEmbeddings')) || {};
+        storedEmbeddings[currentEmail] = embeddingsArray[0]; // Simplified: store the first embedding
+        localStorage.setItem('customFaceEmbeddings', JSON.stringify(storedEmbeddings));
+        console.log('Embeddings saved for:', currentEmail);
+
+        // Save the model weights
+        const modelWeights = await faceModel.save('localstorage://face-model');
+        console.log('Model weights saved');
+
+        alert('Model trained and embeddings saved successfully!');
+        closeFaceCaptureModal();
+      } catch (error) {
+        console.error('Error training model:', error);
+        document.getElementById('face-error').textContent = 'Error training model. Please try again.';
+        document.getElementById('face-error').style.display = 'block';
+      } finally {
+        // Clean up tensors
+        capturedImages.forEach(tensor => tensor.dispose());
+        tf.disposeVariables();
+      }
+    }
+
+    // Delete face
+    function deleteFace(email) {
+      console.log('Delete Face button clicked for email:', email);
+      const storedEmbeddings = JSON.parse(localStorage.getItem('customFaceEmbeddings')) || {};
+      if (storedEmbeddings[email]) {
+        delete storedEmbeddings[email];
+        localStorage.setItem('customFaceEmbeddings', JSON.stringify(storedEmbeddings));
+        console.log('Face embedding deleted for:', email);
+        alert('Face deleted successfully!');
+      } else {
+        console.log('No face embedding found for:', email);
+        alert('No face found to delete.');
+      }
+    }
+
+    // Admin login
+    function handleAdminLogin() {
+      console.log('handleAdminLogin called');
+      const username = document.getElementById('admin-username').value.trim();
+      const password = document.getElementById('admin-password').value.trim();
+      console.log('Input values:', { username, password });
+      const errorMessage = document.getElementById('admin-error');
+      errorMessage.style.display = 'none';
+      errorMessage.textContent = '';
+
+      if (username === 'admin123' && password === '123admin') {
+        console.log('Admin login successful');
+        localStorage.setItem('adminAuthToken', JSON.stringify({ loggedIn: true }));
+        document.getElementById('admin-login').style.display = 'none';
+        document.getElementById('admin-dashboard').style.display = 'block';
+        loadManagerCredentials();
+      } else {
+        console.log('Invalid admin credentials');
+        errorMessage.textContent = 'Invalid username or password.';
+        errorMessage.style.display = 'block';
+      }
+    }
+
+    // Logout admin
+    function logoutAdmin() {
+      console.log('Admin logout initiated');
+      localStorage.removeItem('adminAuthToken');
+      document.getElementById('admin-login').style.display = 'block';
+      document.getElementById('admin-dashboard').style.display = 'none';
+      console.log('Admin logged out');
+    }
+
+    // Load manager credentials
+    function loadManagerCredentials() {
+      console.log('Loading manager credentials');
+      const credentials = JSON.parse(localStorage.getItem('managerCredentials')) || {
+        regular: { email: 'faisalkhancs28@gmail.com', password: '12345' },
+        head: { email: 'headmanager123@gmail.com', password: 'head123' }
+      };
+      document.getElementById('regular-username').value = credentials.regular.email;
+      document.getElementById('regular-password').value = credentials.regular.password;
+      document.getElementById('head-username').value = credentials.head.email;
+      document.getElementById('head-password').value = credentials.head.password;
+      console.log('Manager credentials loaded:', credentials);
+    }
+
+    // Update regular manager credentials
+    function updateRegularManager() {
+      console.log('Updating regular manager credentials');
+      const email = document.getElementById('regular-username').value.trim();
+      const password = document.getElementById('regular-password').value.trim();
+      if (!email || !password) {
+        alert('Username and password cannot be empty.');
+        return;
+      }
+      const credentials = JSON.parse(localStorage.getItem('managerCredentials')) || {
+        regular: { email: 'faisalkhancs28@gmail.com', password: '12345' },
+        head: { email: 'headmanager123@gmail.com', password: 'head123' }
+      };
+      const oldEmail = credentials.regular.email;
+      credentials.regular = { email, password };
+      localStorage.setItem('managerCredentials', JSON.stringify(credentials));
+      
+      // Update embeddings key if email changed
+      const storedEmbeddings = JSON.parse(localStorage.getItem('customFaceEmbeddings')) || {};
+      if (email !== oldEmail && storedEmbeddings[oldEmail]) {
+        storedEmbeddings[email] = storedEmbeddings[oldEmail];
+        delete storedEmbeddings[oldEmail];
+        localStorage.setItem('customFaceEmbeddings', JSON.stringify(storedEmbeddings));
+        console.log('Updated customFaceEmbeddings due to email change:', storedEmbeddings);
+      }
+      
+      console.log('Regular manager credentials updated:', { email, password });
+      alert('Regular manager credentials updated successfully!');
+    }
+
+    // Update head manager credentials
+    function updateHeadManager() {
+      console.log('Updating head manager credentials');
+      const email = document.getElementById('head-username').value.trim();
+      const password = document.getElementById('head-password').value.trim();
+      if (!email || !password) {
+        alert('Username and password cannot be empty.');
+        return;
+      }
+      const credentials = JSON.parse(localStorage.getItem('managerCredentials')) || {
+        regular: { email: 'faisalkhancs28@gmail.com', password: '12345' },
+        head: { email: 'headmanager123@gmail.com', password: 'head123' }
+      };
+      const oldEmail = credentials.head.email;
+      credentials.head = { email, password };
+      localStorage.setItem('managerCredentials', JSON.stringify(credentials));
+      
+      // Update embeddings key if email changed
+      const storedEmbeddings = JSON.parse(localStorage.getItem('customFaceEmbeddings')) || {};
+      if (email !== oldEmail && storedEmbeddings[oldEmail]) {
+        storedEmbeddings[email] = storedEmbeddings[oldEmail];
+        delete storedEmbeddings[oldEmail];
+        localStorage.setItem('customFaceEmbeddings', JSON.stringify(storedEmbeddings));
+        console.log('Updated customFaceEmbeddings due to email change:', storedEmbeddings);
+      }
+      
+      console.log('Head manager credentials updated:', { email, password });
+      alert('Head manager credentials updated successfully!');
+    }
+
+    // Initialize on page load
+    window.onload = async () => {
+      console.log('Page loaded, initializing...');
+      await loadModels();
+      const adminAuthToken = JSON.parse(localStorage.getItem('adminAuthToken'));
+      if (adminAuthToken && adminAuthToken.loggedIn) {
+        console.log('Admin already logged in, showing dashboard');
+        document.getElementById('admin-login').style.display = 'none';
+        document.getElementById('admin-dashboard').style.display = 'block';
+        loadManagerCredentials();
+      } else {
+        console.log('Admin not logged in, showing login form');
+      }
+    };
+  </script>
+</body>
+</html>
